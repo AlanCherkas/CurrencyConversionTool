@@ -1,0 +1,69 @@
+:host {
+  .full-size-container {
+    height: 100vh;
+    width: 100vw;
+  }
+
+  .content-container {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .flex-column-center-center {
+    flex-direction: column;
+    box-sizing: border-box;
+    display: flex;
+    place-content: center;
+    align-items: center;
+  }
+
+  .flex-column {
+    flex-direction: column;
+    box-sizing: border-box;
+    display: flex;
+  }
+
+  .flex-layout-row {
+    flex-direction: row;
+    box-sizing: border-box;
+    display: flex;
+  }
+
+  .flex-row-center-center {
+    flex-direction: row;
+    box-sizing: border-box;
+    display: flex;
+    place-content: center;
+    align-items: center;
+  }
+
+  .flex-33 {
+    flex: 1 1 100%;
+    box-sizing: border-box;
+    max-width: 33%;
+  }
+
+  .title {
+    font-size: 24px;
+    font-weight: bold;
+  }
+
+  .subtitle {
+    font-size: 16px;
+  }
+
+  .form-container {
+    gap: 16px;
+  }
+
+  .result-title {
+    font-size: 20px;
+    font-weight: bold;
+  }
+
+  .result-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #3f51b5; /* Material Indigo */
+  }
+}
