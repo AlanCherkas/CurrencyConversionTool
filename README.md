@@ -1,7 +1,7 @@
 # Currency Conversion Tool 💱
 
 A modern, responsive Angular application for real-time currency conversion with an intuitive user interface and robust error handling.
-Demo: https://github.com/AlanCherkas/CurrencyConversionTool
+Demo: https://alancherkas.github.io/CurrencyConversionTool/currency-conversion
 
 ## 🌟 Features
 
