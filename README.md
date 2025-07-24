@@ -14,8 +14,8 @@ Demo: https://alancherkas.github.io/CurrencyConversionTool/currency-conversion
 
 ## 🚀 Technologies Used
 
-- **Frontend**: Angular 16.2.14
-- **UI Framework**: Angular Material 16.2.14
+- **Frontend**: Angular 20.1.2
+- **UI Framework**: Angular Material 20.1.0
 - **HTTP Client**: Angular HTTP Client for API communication
 - **Reactive Forms**: FormGroup and FormControl for form management
 - **RxJS**: Reactive programming with observables and operators
@@ -43,9 +43,9 @@ src/
 
 ### Prerequisites
 
-- Node.js (v16 or higher)
+- Node.js (v20 or higher)
 - npm (v8 or higher)
-- Angular CLI (v16.2.14)
+- Angular CLI (v20.1.2)
 
 ### Installation
 
