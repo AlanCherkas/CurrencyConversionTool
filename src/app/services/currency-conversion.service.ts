@@ -1,22 +1,21 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+import { environment } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
-import { environment } from 'src/environments/environment';
-import { Currency } from '../shared/models/currency.model';
-import { map, Observable } from 'rxjs';
-import { GetCurrenciesResponse } from '../shared/models/get-currencies-response.model';
-import { ConvertCurrenciesResponse } from '../shared/models/convert-currencies-response.model';
+import { Observable, map } from 'rxjs';
 import { Conversion } from '../shared/models/conversion.model';
+import { ConvertCurrenciesResponse } from '../shared/models/convert-currencies-response.model';
+import { Currency } from '../shared/models/currency.model';
+import { GetCurrenciesResponse } from '../shared/models/get-currencies-response.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class CurrencyConversionService {
   private url = `${environment.BACKEND_URL}`;
-
-  constructor(public http: HttpClient) {}
+  private httpClient = inject(HttpClient);
 
   getCurrencies(): Observable<Currency[]> {
-    return this.http
+    return this.httpClient
       .get<GetCurrenciesResponse>(`${this.url}/v1/currencies`)
       .pipe(
         map((responseBody) => {
@@ -30,7 +29,7 @@ export class CurrencyConversionService {
     toCurrency: string,
     amount: number
   ): Observable<Conversion> {
-    return this.http
+    return this.httpClient
       .get<ConvertCurrenciesResponse>(`${this.url}/v1/convert`, {
         params: {
           from: fromCurrency,

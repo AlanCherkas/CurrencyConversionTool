@@ -1,43 +1,50 @@
 import {
-  HttpEvent,
-  HttpHandler,
-  HttpInterceptor,
   HttpRequest,
+  HttpHandlerFn,
+  HttpEvent,
+  HttpErrorResponse,
 } from '@angular/common/http';
-import { Observable, throwError as observableThrowError, from } from 'rxjs';
-import { catchError } from 'rxjs/operators';
-import { Injectable } from '@angular/core';
-import { environment } from 'src/environments/environment';
+import { inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { catchError, Observable, throwError } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
-@Injectable()
-export class AuthInterceptor implements HttpInterceptor {
-  constructor() {}
+export function authInterceptor(
+  request: HttpRequest<unknown>,
+  next: HttpHandlerFn
+): Observable<HttpEvent<unknown>> {
+  const router = inject(Router);
 
-  intercept(
-    request: HttpRequest<any>,
-    next: HttpHandler
-  ): Observable<HttpEvent<any>> {
-    return from(this.handleRequest(request, next)).pipe(
-      catchError((errors) => {
-        if (errors.status === 401) {
-          //ToDo: Handle unauthorized access
-        }
-        return observableThrowError(errors);
-      })
-    );
+  const clonedRequest = attachAccessToken(request);
+  return handleRequest({
+    request: clonedRequest,
+    next,
+    router,
+  });
+}
+
+function attachAccessToken(
+  request: HttpRequest<unknown>
+): HttpRequest<unknown> {
+  if (environment.ACCESS_TOKEN) {
+    return request.clone({
+      setHeaders: { Authorization: environment.ACCESS_TOKEN },
+    });
   }
+  return request;
+}
 
-  private async handleRequest(
-    request: HttpRequest<any>,
-    next: HttpHandler
-  ): Promise<any> {
-    if (environment.ACCESS_TOKEN) {
-      request = request.clone({
-        setHeaders: {
-          Authorization: environment.ACCESS_TOKEN,
-        },
-      });
-    }
-    return next.handle(request).toPromise();
-  }
+function handleRequest(parameters: {
+  request: HttpRequest<unknown>;
+  next: HttpHandlerFn;
+  router: Router;
+}): Observable<HttpEvent<unknown>> {
+  return parameters.next(parameters.request).pipe(
+    catchError((errorResponse: HttpErrorResponse) => {
+      if (errorResponse.status === 401) {
+        //ToDo: Handle unauthorized access
+      }
+      return throwError(() => errorResponse);
+    })
+  );
 }

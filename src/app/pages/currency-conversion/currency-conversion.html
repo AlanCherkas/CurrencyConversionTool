@@ -15,32 +15,32 @@
     <mat-form-field appearance="outline" class="flex-33">
       <mat-label>Currency From</mat-label>
       <mat-select required formControlName="fromCurrency">
-        <mat-option
-          *ngFor="let currency of currencies"
-          [value]="currency.short_code"
-        >
+        @for(currency of currencies(); track currency.short_code) {
+        <mat-option [value]="currency.short_code">
           {{ currency.short_code }} - {{ currency.name }}
         </mat-option>
+        }
       </mat-select>
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="flex-33">
       <mat-label>Currency To</mat-label>
       <mat-select required formControlName="toCurrency">
-        <mat-option
-          *ngFor="let currency of currencies"
-          [value]="currency.short_code"
-        >
+        @for(currency of currencies(); track currency.short_code) {
+        <mat-option [value]="currency.short_code">
           {{ currency.short_code }} - {{ currency.name }}
         </mat-option>
+        }
       </mat-select>
     </mat-form-field>
   </form>
-  <div class="flex-column-center-center" *ngIf="conversion">
+  @if(conversion()) {
+  <div class="flex-column-center-center">
     <span class="result-title">Conversion Result:</span>
     <span class="result-value"
       >{{ form.get("amount")?.value }} {{ form.get("fromCurrency")?.value }} to
-      {{ conversion.value }} {{ form.get("toCurrency")?.value }}</span
+      {{ conversion()?.value }} {{ form.get("toCurrency")?.value }}</span
     >
   </div>
+  }
 </div>
