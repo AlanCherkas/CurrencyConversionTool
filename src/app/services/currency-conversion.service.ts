@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
@@ -11,6 +11,8 @@ import { GetCurrenciesResponse } from '../shared/models/get-currencies-response.
   providedIn: 'root',
 })
 export class CurrencyConversionService {
+  conversions = signal<Conversion[]>([]);
+
   private url = `${environment.BACKEND_URL}`;
   private httpClient = inject(HttpClient);
 

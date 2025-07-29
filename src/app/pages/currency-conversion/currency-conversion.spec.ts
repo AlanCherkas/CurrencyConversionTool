@@ -11,7 +11,7 @@ import { CurrencyConversionService } from '../../services/currency-conversion.se
 import { SharedModule } from '../../shared/shared.module';
 import { Currency } from '../../shared/models/currency.model';
 import { Conversion } from '../../shared/models/conversion.model';
-import { DEBOUNCE_TIME_MS } from '../../shared/constants/currency-conversion.constants';
+import { DEBOUNCE_TIME_MS, LAST_CURRENCIES_TO_SHOW_AMOUNT } from '../../shared/constants/currency-conversion.constants';
 
 describe('CurrencyConversion', () => {
   let component: CurrencyConversion;
@@ -153,6 +153,20 @@ describe('CurrencyConversion', () => {
       expect(component.conversion()).toBeNull();
     }));
 
+    it('should call convertCurrencyAmount after debounce time with valid form', fakeAsync(() => {
+      spyOn(component, 'convertCurrencyAmount');
+
+      component.form.patchValue({
+        fromCurrency: 'USD',
+        toCurrency: 'EUR',
+        amount: 100,
+      });
+
+      tick(DEBOUNCE_TIME_MS);
+
+      expect(component.convertCurrencyAmount).toHaveBeenCalled();
+    }));
+
     it('should not call conversion service if form is invalid', fakeAsync(() => {
       // Set invalid form (missing required fields)
       component.form.patchValue({
@@ -165,16 +179,185 @@ describe('CurrencyConversion', () => {
 
       expect(mockCurrencyService.convertCurrencyAmount).not.toHaveBeenCalled();
     }));
+
+    it('should handle multiple rapid form changes correctly', fakeAsync(() => {
+      spyOn(component, 'convertCurrencyAmount');
+
+      // Make rapid changes
+      component.form.patchValue({ amount: 50 });
+      tick(100);
+      component.form.patchValue({ amount: 75 });
+      tick(100);
+      component.form.patchValue({ amount: 100 });
+      tick(DEBOUNCE_TIME_MS);
+
+      // Should only call once after final debounce
+      expect(component.convertCurrencyAmount).toHaveBeenCalledTimes(2);
+    }));
   });
 
-  describe('resetConversion', () => {
-    it('should reset conversion to null', () => {
+  describe('Form Validation', () => {
+    it('should validate amount field is required', () => {
+      const amountControl = component.form.get('amount');
+      amountControl?.setValue(null);
+      expect(amountControl?.hasError('required')).toBeTruthy();
+
+      amountControl?.setValue(100);
+      expect(amountControl?.hasError('required')).toBeFalsy();
+    });
+
+    it('should validate fromCurrency field is required', () => {
+      const fromCurrencyControl = component.form.get('fromCurrency');
+      fromCurrencyControl?.setValue(null);
+      expect(fromCurrencyControl?.hasError('required')).toBeTruthy();
+
+      fromCurrencyControl?.setValue('USD');
+      expect(fromCurrencyControl?.hasError('required')).toBeFalsy();
+    });
+
+    it('should validate toCurrency field is required', () => {
+      const toCurrencyControl = component.form.get('toCurrency');
+      toCurrencyControl?.setValue(null);
+      expect(toCurrencyControl?.hasError('required')).toBeTruthy();
+
+      toCurrencyControl?.setValue('EUR');
+      expect(toCurrencyControl?.hasError('required')).toBeFalsy();
+    });
+
+    it('should consider form valid when all required fields are filled', () => {
+      component.form.patchValue({
+        fromCurrency: 'USD',
+        toCurrency: 'EUR',
+        amount: 100,
+      });
+
+      expect(component.form.valid).toBeTruthy();
+    });
+
+    it('should consider form invalid when any required field is missing', () => {
+      component.form.patchValue({
+        fromCurrency: 'USD',
+        toCurrency: null,
+        amount: 100,
+      });
+
+      expect(component.form.valid).toBeFalsy();
+    });
+  });
+
+  describe('setConversion', () => {
+    it('should set conversion value', () => {
+      expect(component.conversion()).toBeNull();
+
+      component.setConversion(mockConversion);
+
+      expect(component.conversion()).toEqual(mockConversion);
+    });
+
+    it('should set conversion to null', () => {
       component.conversion.set(mockConversion);
       expect(component.conversion()).not.toBeNull();
 
-      component.resetConversion();
+      component.setConversion(null);
 
       expect(component.conversion()).toBeNull();
+    });
+  });
+
+  describe('conversionChanged', () => {
+    beforeEach(() => {
+      fixture.detectChanges();
+      component.ngOnInit();
+    });
+
+    it('should update conversions signal when conversion exists', () => {
+      const updateSpy = jasmine.createSpy('update');
+      Object.defineProperty(mockCurrencyService, 'conversions', {
+        value: { update: updateSpy },
+        writable: true
+      });
+
+      component.conversion.set(mockConversion);
+      component.conversionChanged();
+
+      expect(updateSpy).toHaveBeenCalled();
+    });
+
+    it('should not update conversions when conversion is null', () => {
+      const updateSpy = jasmine.createSpy('update');
+      Object.defineProperty(mockCurrencyService, 'conversions', {
+        value: { update: updateSpy },
+        writable: true
+      });
+
+      component.conversion.set(null);
+      component.conversionChanged();
+
+      expect(updateSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('convertCurrencyAmount', () => {
+    beforeEach(() => {
+      fixture.detectChanges();
+      component.ngOnInit();
+    });
+
+    it('should call conversion service when form is valid', fakeAsync(() => {
+      component.form.patchValue({
+        fromCurrency: 'USD',
+        toCurrency: 'EUR',
+        amount: 100,
+      });
+
+      component.convertCurrencyAmount();
+      tick();
+
+      expect(mockCurrencyService.convertCurrencyAmount).toHaveBeenCalledWith(
+        'USD',
+        'EUR',
+        100
+      );
+    }));
+
+    it('should not call conversion service when form is invalid', () => {
+      component.form.patchValue({
+        fromCurrency: null,
+        toCurrency: 'EUR',
+        amount: 100,
+      });
+
+      component.convertCurrencyAmount();
+
+      expect(mockCurrencyService.convertCurrencyAmount).not.toHaveBeenCalled();
+    });
+
+    it('should call setConversion and conversionChanged after successful conversion', fakeAsync(() => {
+      spyOn(component, 'setConversion');
+      spyOn(component, 'conversionChanged');
+
+      component.form.patchValue({
+        fromCurrency: 'USD',
+        toCurrency: 'EUR',
+        amount: 100,
+      });
+
+      component.convertCurrencyAmount();
+      tick();
+
+      expect(component.setConversion).toHaveBeenCalledWith(mockConversion);
+      expect(component.conversionChanged).toHaveBeenCalled();
+    }));
+  });
+
+  describe('Service Integration', () => {
+    beforeEach(() => {
+      fixture.detectChanges();
+      component.ngOnInit();
+    });
+
+    it('should set currencies from successful service call', () => {
+      expect(component.currencies()).toEqual(mockCurrencies);
     });
   });
 
@@ -223,6 +406,29 @@ describe('CurrencyConversion', () => {
       expect(formFields.length).toBe(3); // amount, fromCurrency, toCurrency
       expect(inputs.length).toBe(1); // amount input
       expect(selects.length).toBe(2); // fromCurrency and toCurrency selects
+    });
+
+    it('should render LastConversions component with correct input', () => {
+      const compiled = fixture.nativeElement;
+      const lastConversionsElement = compiled.querySelector('app-last-conversions');
+
+      expect(lastConversionsElement).toBeTruthy();
+      expect(component.conversionsToShowAmount).toBe(LAST_CURRENCIES_TO_SHOW_AMOUNT);
+    });
+
+    it('should bind form controls to template elements correctly', () => {
+      const compiled = fixture.nativeElement;
+
+      // Test amount input
+      const amountInput = compiled.querySelector('input[formControlName="amount"]');
+      expect(amountInput).toBeTruthy();
+
+      // Test currency selects
+      const fromCurrencySelect = compiled.querySelector('mat-select[formControlName="fromCurrency"]');
+      const toCurrencySelect = compiled.querySelector('mat-select[formControlName="toCurrency"]');
+
+      expect(fromCurrencySelect).toBeTruthy();
+      expect(toCurrencySelect).toBeTruthy();
     });
   });
 
@@ -360,6 +566,71 @@ describe('CurrencyConversion', () => {
         largeAmount
       );
       expect(component.conversion()).toEqual(largeConversion);
+    }));
+
+    it('should handle decimal amounts', fakeAsync(() => {
+      const decimalAmount = 100.50;
+      const decimalConversion: Conversion = {
+        ...mockConversion,
+        amount: decimalAmount,
+        value: decimalAmount * 0.855,
+      };
+      mockCurrencyService.convertCurrencyAmount.and.returnValue(
+        of(decimalConversion)
+      );
+
+      component.form.patchValue({
+        fromCurrency: 'USD',
+        toCurrency: 'EUR',
+        amount: decimalAmount,
+      });
+
+      tick(DEBOUNCE_TIME_MS);
+
+      expect(mockCurrencyService.convertCurrencyAmount).toHaveBeenCalledWith(
+        'USD',
+        'EUR',
+        decimalAmount
+      );
+      expect(component.conversion()).toEqual(decimalConversion);
+    }));
+
+    it('should handle empty currencies array', () => {
+      mockCurrencyService.getCurrencies.and.returnValue(of([]));
+
+      component.setCurrencies();
+
+      expect(component.currencies()).toEqual([]);
+    });
+
+    it('should handle partial form completion during user interaction', fakeAsync(() => {
+      // User starts filling the form
+      component.form.patchValue({
+        fromCurrency: 'USD',
+        toCurrency: null,
+        amount: null,
+      });
+
+      tick(DEBOUNCE_TIME_MS);
+
+      // Should not call service with incomplete form
+      expect(mockCurrencyService.convertCurrencyAmount).not.toHaveBeenCalled();
+
+      // User completes the form
+      component.form.patchValue({
+        fromCurrency: 'USD',
+        toCurrency: 'EUR',
+        amount: 100,
+      });
+
+      tick(DEBOUNCE_TIME_MS);
+
+      // Now should call service
+      expect(mockCurrencyService.convertCurrencyAmount).toHaveBeenCalledWith(
+        'USD',
+        'EUR',
+        100
+      );
     }));
   });
 });

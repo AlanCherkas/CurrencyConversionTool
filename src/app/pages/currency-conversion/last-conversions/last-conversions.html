@@ -1,0 +1,11 @@
+<div class="flex-column">
+  @if (lastConversions.length) {
+  <span class="result-row-title">Last {{ take() }} Conversions:</span>
+
+  @for(conversion of lastConversions; track conversion.timestamp) {
+  <span class="result-row-value"
+    >{{ conversion?.amount }} {{ conversion?.from }} to {{ conversion?.value }}
+    {{ conversion?.to }}
+  </span>
+  }}
+</div>
